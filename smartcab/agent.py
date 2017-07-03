@@ -19,16 +19,15 @@ class LearningAgent(Agent):
         self.Q = dict()          # Create a Q-table which will be a dictionary of tuples
         self.epsilon = epsilon   # Random exploration factor
         self.alpha = alpha       # Learning factor
-        self.t = 1
 
         ###########
         ## TO DO ##
         ###########
         # Set any additional class parameters as needed
-        self.prev_state = None
-        self.prev_action = None
-        self.prev_reward = 0
-
+        # self.prev_state = None
+        # self.prev_action = None
+        # self.prev_reward = 0
+        self.t = 1
 
     def reset(self, destination=None, testing=False):
         """ The reset function is called at the beginning of each trial.
@@ -50,6 +49,7 @@ class LearningAgent(Agent):
             self.alpha = 0
         else:
             self.epsilon = math.e ** -(self.t * 0.01)
+            # self.epsilon = self.epsilon - 0.05
             self.t += 1
 
 
@@ -76,12 +76,8 @@ class LearningAgent(Agent):
         # constraints in order for you to learn how to adjust epsilon and alpha, and thus learn about the balance between
         # exploration and exploitation.
         # With the hand-engineered features, this learning process gets entirely negated.
-        
-        # Set 'state' as a tuple of relevant data for the agent
-        cross_left = True if inputs['left'] == 'forward' else False
-        oncoming = True if inputs['oncoming'] == 'right' or inputs['oncoming'] == 'forward' else False
 
-        state = (inputs['light'], cross_left, oncoming, waypoint)
+        state = (inputs['light'], inputs['left'], inputs['oncoming'], waypoint)
 
         return state
 
@@ -112,6 +108,9 @@ class LearningAgent(Agent):
         # When learning, check if the 'state' is not in the Q-table
         # If it is not, create a new dictionary for that state
         #   Then, for each action available, set the initial Q-value to 0.0
+
+        if self.learning is not True:
+            return
 
         if state not in self.Q.keys():
             self.Q[state] = dict(zip(self.valid_actions, len(self.valid_actions) * [0.0]))
@@ -161,10 +160,11 @@ class LearningAgent(Agent):
         if not self.learning:
             return
 
-        gamma = 0
+        # gamma = 0
 
-        if self.prev_state:
-            self.Q[self.prev_state][self.prev_action] = ((1 - self.alpha) * self.Q[self.prev_state][self.prev_action]) + self.alpha * (self.prev_reward + gamma * self.Q[state][self.get_maxQ(state)])
+        # if self.prev_state:
+            # self.Q[self.prev_state][self.prev_action] = ((1 - self.alpha) * self.Q[self.prev_state][self.prev_action]) + self.alpha * (self.prev_reward + gamma * self.Q[state][self.get_maxQ(state)])
+        self.Q[state][action] = self.Q[state][action] + self.alpha * (reward - self.Q[state][action])
 
         return
 
@@ -182,9 +182,9 @@ class LearningAgent(Agent):
         self.learn(state, action, reward)   # Q-learn
 
         # Update previous values
-        self.prev_action = action
-        self.prev_state = state
-        self.prev_reward = reward
+        # self.prev_action = action
+        # self.prev_state = state
+        # self.prev_reward = reward
         return
         
 
@@ -206,8 +206,8 @@ def run():
     #   learning   - set to True to force the driving agent to use Q-learning
     #    * epsilon - continuous value for the exploration factor, default is 1
     #    * alpha   - continuous value for the learning rate, default is 0.5
-    agent = env.create_agent(LearningAgent, learning=True, epsilon=1.0, alpha=.5)#0.6 - try even 1
-    
+    agent = env.create_agent(LearningAgent, learning=True, epsilon=1.0, alpha=.7)
+
     ##############
     # Follow the driving agent
     # Flags:
@@ -222,14 +222,13 @@ def run():
     #   log_metrics  - set to True to log trial and simulation results to /logs
     #   optimized    - set to True to change the default log file name
     sim = Simulator(env, update_delay=.01, log_metrics=True, display=False, optimized=True)
-    
+
     ##############
     # Run the simulator
     # Flags:
     #   tolerance  - epsilon tolerance before beginning testing, default is 0.05 
     #   n_test     - discrete number of testing trials to perform, default is 0
-    sim.run(n_test=50, tolerance=0.1) #0.05
-
+    sim.run(n_test=50, tolerance=0.03) #0.05
 
 if __name__ == '__main__':
     run()
